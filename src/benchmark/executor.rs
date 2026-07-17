@@ -38,6 +38,10 @@ mod tests {
             normalize_relative_command_path_for_cmd("../target/debug/tool.exe --output value/a"),
             "..\\target\\debug\\tool.exe --output value/a"
         );
+        assert_eq!(
+            normalize_relative_command_path_for_cmd("./tool.exe \"input file.txt\""),
+            ".\\tool.exe \"input file.txt\""
+        );
     }
 }
 
@@ -225,9 +229,9 @@ impl Executor for ShellExecutor<'_> {
             #[cfg(windows)]
             if command_line.starts_with("./") || command_line.starts_with("../") {
                 // `cmd.exe /C` treats the leading `.` as a command when passed
-                // verbatim. Normalize only the executable path and let `Command`
-                // quote the complete invocation.
-                command_builder.arg(normalize_relative_command_path_for_cmd(&command_line));
+                // verbatim. Normalize only the executable path while retaining
+                // cmd.exe's existing raw quoting semantics for the full command.
+                command_builder.raw_arg(normalize_relative_command_path_for_cmd(&command_line));
             } else {
                 command_builder.raw_arg(&command_line);
             }
